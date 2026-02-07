@@ -16,11 +16,16 @@ export async function loadCatalog(lang: SupportedLanguages): Promise<{
 }> {
   const extension = env('NODE_ENV') === 'development' ? 'po' : 'mjs';
 
-  const { messages } = await import(`../../translations/${lang}/web.${extension}`);
-
-  return {
-    [lang]: messages,
-  };
+  try {
+    const { messages } = await import(
+      `../../translations/${lang}/web.${extension}`
+    );
+    return { [lang]: messages };
+  } catch {
+    // In serverless (e.g. Vercel) the translation files may not be in the bundle.
+    // Return empty messages so the app still runs; strings may show as keys.
+    return { [lang]: {} as Messages };
+  }
 }
 
 const catalogs = Promise.all(SUPPORTED_LANGUAGE_CODES.map(loadCatalog));

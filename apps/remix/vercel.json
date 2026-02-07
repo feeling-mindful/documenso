@@ -1,8 +1,3 @@
 {
-  "rewrites": [{"source": "/(.*)", "destination": "/api"}],
-  "functions": {
-    "api/index.mjs": {
-      "includeFiles": "build/server/hono/packages/lib/translations/**"
-    }
-  }
+  "rewrites": [{"source": "/(.*)", "destination": "/api"}]
 }
