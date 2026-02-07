@@ -44,99 +44,116 @@ export const emailPasswordRoute = new Hono<HonoAuthContext>()
    * Authorize endpoint.
    */
   .post('/authorize', sValidator('json', ZSignInSchema), async (c) => {
-    const requestMetadata = c.get('requestMetadata');
+    try {
+      const requestMetadata = c.get('requestMetadata');
 
-    const { email, password, totpCode, backupCode, csrfToken } = c.req.valid('json');
+      const { email, password, totpCode, backupCode, csrfToken } = c.req.valid('json');
 
-    const csrfCookieToken = await getCsrfCookie(c);
+      console.error('[Auth] Sign-in attempt:', email);
 
-    // Todo: (RR7) Add logging here.
-    if (csrfToken !== csrfCookieToken || !csrfCookieToken) {
-      throw new AppError(AuthenticationErrorCode.InvalidRequest, {
-        message: 'Invalid CSRF token',
-      });
-    }
+      const csrfCookieToken = await getCsrfCookie(c);
 
-    const user = await prisma.user.findFirst({
-      where: {
-        email: email.toLowerCase(),
-      },
-    });
+      if (csrfToken !== csrfCookieToken || !csrfCookieToken) {
+        console.error('[Auth] Sign-in failed: INVALID_REQUEST (CSRF)');
+        throw new AppError(AuthenticationErrorCode.InvalidRequest, {
+          message: 'Invalid CSRF token',
+        });
+      }
 
-    if (!user || !user.password) {
-      throw new AppError(AuthenticationErrorCode.InvalidCredentials, {
-        message: 'Invalid email or password',
-      });
-    }
-
-    const isPasswordsSame = await compare(password, user.password);
-
-    if (!isPasswordsSame) {
-      await prisma.userSecurityAuditLog.create({
-        data: {
-          userId: user.id,
-          ipAddress: requestMetadata.ipAddress,
-          userAgent: requestMetadata.userAgent,
-          type: UserSecurityAuditLogType.SIGN_IN_FAIL,
+      const user = await prisma.user.findFirst({
+        where: {
+          email: email.toLowerCase(),
         },
       });
 
-      throw new AppError(AuthenticationErrorCode.InvalidCredentials, {
-        message: 'Invalid email or password',
-      });
-    }
+      if (!user || !user.password) {
+        console.error('[Auth] Sign-in failed: INVALID_CREDENTIALS (no user or no password)');
+        throw new AppError(AuthenticationErrorCode.InvalidCredentials, {
+          message: 'Invalid email or password',
+        });
+      }
 
-    const is2faEnabled = isTwoFactorAuthenticationEnabled({ user });
+      const isPasswordsSame = await compare(password, user.password);
 
-    if (is2faEnabled) {
-      const isValid = await validateTwoFactorAuthentication({ backupCode, totpCode, user });
-
-      if (!isValid) {
+      if (!isPasswordsSame) {
         await prisma.userSecurityAuditLog.create({
           data: {
             userId: user.id,
             ipAddress: requestMetadata.ipAddress,
             userAgent: requestMetadata.userAgent,
-            type: UserSecurityAuditLogType.SIGN_IN_2FA_FAIL,
+            type: UserSecurityAuditLogType.SIGN_IN_FAIL,
           },
         });
 
-        throw new AppError(AuthenticationErrorCode.InvalidTwoFactorCode);
-      }
-    }
-
-    if (!user.emailVerified) {
-      const mostRecentToken = await getMostRecentEmailVerificationToken({
-        userId: user.id,
-      });
-
-      if (
-        !mostRecentToken ||
-        mostRecentToken.expires.valueOf() <= Date.now() ||
-        DateTime.fromJSDate(mostRecentToken.createdAt).diffNow('minutes').minutes > -5
-      ) {
-        await jobsClient.triggerJob({
-          name: 'send.signup.confirmation.email',
-          payload: {
-            email: user.email,
-          },
+        console.error('[Auth] Sign-in failed: INVALID_CREDENTIALS (password mismatch)');
+        throw new AppError(AuthenticationErrorCode.InvalidCredentials, {
+          message: 'Invalid email or password',
         });
       }
 
-      throw new AppError('UNVERIFIED_EMAIL', {
-        message: 'Unverified email',
-      });
+      const is2faEnabled = isTwoFactorAuthenticationEnabled({ user });
+
+      if (is2faEnabled) {
+        const isValid = await validateTwoFactorAuthentication({ backupCode, totpCode, user });
+
+        if (!isValid) {
+          await prisma.userSecurityAuditLog.create({
+            data: {
+              userId: user.id,
+              ipAddress: requestMetadata.ipAddress,
+              userAgent: requestMetadata.userAgent,
+              type: UserSecurityAuditLogType.SIGN_IN_2FA_FAIL,
+            },
+          });
+
+          console.error('[Auth] Sign-in failed: INVALID_TWO_FACTOR_CODE');
+          throw new AppError(AuthenticationErrorCode.InvalidTwoFactorCode);
+        }
+      }
+
+      if (!user.emailVerified) {
+        const mostRecentToken = await getMostRecentEmailVerificationToken({
+          userId: user.id,
+        });
+
+        if (
+          !mostRecentToken ||
+          mostRecentToken.expires.valueOf() <= Date.now() ||
+          DateTime.fromJSDate(mostRecentToken.createdAt).diffNow('minutes').minutes > -5
+        ) {
+          await jobsClient.triggerJob({
+            name: 'send.signup.confirmation.email',
+            payload: {
+              email: user.email,
+            },
+          });
+        }
+
+        console.error('[Auth] Sign-in failed: UNVERIFIED_EMAIL');
+        throw new AppError('UNVERIFIED_EMAIL', {
+          message: 'Unverified email',
+        });
+      }
+
+      if (user.disabled) {
+        console.error('[Auth] Sign-in failed: ACCOUNT_DISABLED');
+        throw new AppError('ACCOUNT_DISABLED', {
+          message: 'Account disabled',
+        });
+      }
+
+      await onAuthorize({ userId: user.id }, c);
+
+      console.error('[Auth] Sign-in success:', email);
+      return c.text('', 201);
+    } catch (error) {
+      if (error instanceof AppError) {
+        console.error('[Auth] Sign-in AppError:', error.code);
+        throw error;
+      }
+      console.error('[Auth] Sign-in error (raw):', error);
+      throw error;
     }
-
-    if (user.disabled) {
-      throw new AppError('ACCOUNT_DISABLED', {
-        message: 'Account disabled',
-      });
-    }
-
-    await onAuthorize({ userId: user.id }, c);
-
-    return c.text('', 201);
   })
   /**
    * Signup endpoint.
