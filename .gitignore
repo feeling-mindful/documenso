@@ -68,3 +68,4 @@ scripts/output*
 .documenso-license.json
 .documenso-license-backup.json
 .env*.local
+firebase-debug.log
