@@ -58,6 +58,7 @@ export const signupErrorMessages: Record<string, MessageDescriptor> = {
   SIGNUP_DISABLED: msg`Signups are disabled.`,
   [AppErrorCode.ALREADY_EXISTS]: msg`User with this email already exists. Please use a different email address.`,
   [AppErrorCode.INVALID_REQUEST]: msg`We were unable to create your account. Please review the information you provided and try again.`,
+  [AppErrorCode.UNKNOWN_ERROR]: msg`Something went wrong on our end. Please try again or contact support if the problem continues.`,
 };
 
 export type TSignUpFormSchema = z.infer<typeof ZSignUpFormSchema>;

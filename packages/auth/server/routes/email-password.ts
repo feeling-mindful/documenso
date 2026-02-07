@@ -151,7 +151,13 @@ export const emailPasswordRoute = new Hono<HonoAuthContext>()
     const { name, email, password, signature } = c.req.valid('json');
 
     const user = await createUser({ name, email, password, signature }).catch((err) => {
-      console.error(err);
+      console.error('[Signup] createUser failed:', err?.message ?? err);
+      if (err?.code) {
+        console.error('[Signup] Prisma/code:', err.code);
+      }
+      if (err?.meta) {
+        console.error('[Signup] Prisma meta:', err.meta);
+      }
       throw err;
     });
 

@@ -28,6 +28,9 @@ npm run build:server
 # Copy over the entry point for the server.
 cp server/main.js build/server/main.js
 
+# Copy Vercel serverless handler (so /api/auth and all routes work on Vercel).
+cp server/vercel.js build/server/vercel.js
+
 # Copy over all web.js translations
 cp -r ../../packages/lib/translations build/server/hono/packages/lib/translations
 
