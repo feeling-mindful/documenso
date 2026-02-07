@@ -36,11 +36,14 @@ export const getDatabaseUrl = () => {
   // mofifiable URL.
   const url = new URL(process.env.NEXT_PRIVATE_DATABASE_URL.replace('postgres://', 'https://'));
 
-  // If we're using a connection pool, we need to let Prisma know that
-  // we're using PgBouncer.
-  if (process.env.NEXT_PRIVATE_DATABASE_URL !== process.env.NEXT_PRIVATE_DIRECT_DATABASE_URL) {
+  // If we're using a connection pool (PgBouncer/Supabase pooler), Prisma must not use
+  // prepared statements or we get "prepared statement already exists" (42P05) in serverless.
+  const isPooledUrl =
+    process.env.NEXT_PRIVATE_DATABASE_URL !== process.env.NEXT_PRIVATE_DIRECT_DATABASE_URL ||
+    url.port === '6543' ||
+    url.hostname.includes('pooler');
+  if (isPooledUrl) {
     url.searchParams.set('pgbouncer', 'true');
-
     process.env.NEXT_PRIVATE_DATABASE_URL = url.toString().replace('https://', 'postgres://');
   }
 

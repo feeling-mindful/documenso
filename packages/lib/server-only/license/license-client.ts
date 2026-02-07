@@ -175,17 +175,29 @@ export class LicenseClient {
   }
 
   private async saveToFile(data: TCachedLicense): Promise<void> {
-    const licenseFilePath = path.join(process.cwd(), LICENSE_FILE_NAME);
+    // In serverless (e.g. Vercel) the filesystem is read-only; use /tmp when available.
+    const baseDir =
+      process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME ? '/tmp' : process.cwd();
+    const licenseFilePath = path.join(baseDir, LICENSE_FILE_NAME);
 
     try {
       await fs.writeFile(licenseFilePath, JSON.stringify(data, null, 2), 'utf-8');
-    } catch (error) {
+    } catch (error: unknown) {
+      const code =
+        error && typeof error === 'object' && 'code' in error
+          ? (error as { code?: string }).code
+          : undefined;
+      if (code === 'EROFS' || code === 'EACCES') {
+        return; // Expected in serverless; cache is already in memory.
+      }
       console.error('[License] Failed to save license file:', error);
     }
   }
 
   private async loadFromFile(): Promise<TCachedLicense | null> {
-    const licenseFilePath = path.join(process.cwd(), LICENSE_FILE_NAME);
+    const baseDir =
+      process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME ? '/tmp' : process.cwd();
+    const licenseFilePath = path.join(baseDir, LICENSE_FILE_NAME);
 
     try {
       const fileContents = await fs.readFile(licenseFilePath, 'utf-8');
