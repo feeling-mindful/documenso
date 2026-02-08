@@ -11,7 +11,8 @@ import { remember } from '../../utils/remember';
 type SupportedLanguages = (typeof SUPPORTED_LANGUAGE_CODES)[number];
 
 // Static import map so the bundler can trace these at build time.
-const translationLoaders: Record<string, () => Promise<{ messages: Messages }>> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const translationLoaders: Record<string, () => Promise<{ messages: any }>> = {
   de: async () => import('../../translations/de/web.mjs'),
   en: async () => import('../../translations/en/web.mjs'),
   fr: async () => import('../../translations/fr/web.mjs'),
