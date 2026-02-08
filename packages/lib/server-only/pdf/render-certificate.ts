@@ -22,6 +22,7 @@ import {
 } from '../../constants/recipient-roles';
 import type { TDocumentAuditLogBaseSchema } from '../../types/document-audit-logs';
 import { svgToPng } from '../../utils/images/svg-to-png';
+import { getFontPath, getStaticPath } from './helpers';
 
 type ColumnWidths = [number, number, number];
 
@@ -556,8 +557,7 @@ const renderBranding = async ({ qrToken, i18n }: { qrToken: string | null; i18n:
     height: brandingHeight,
   });
 
-  const logoPath = path.join(process.cwd(), 'public/static/logo.png');
-  const logo = fs.readFileSync(logoPath);
+  const logo = fs.readFileSync(path.join(getStaticPath(), 'logo.png'));
 
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const img = new SkiaImage(logo) as unknown as HTMLImageElement;
@@ -700,7 +700,7 @@ export async function renderCertificate({
   pageWidth,
   pageHeight,
 }: GenerateCertificateOptions) {
-  const fontPath = path.join(process.cwd(), 'public/fonts');
+  const fontPath = getFontPath();
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   FontLibrary.use({

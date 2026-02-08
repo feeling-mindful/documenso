@@ -2,8 +2,8 @@
   "outputDirectory": "build/client",
   "rewrites": [{"source": "/(.*)", "destination": "/api"}],
   "functions": {
-    "api/**": {
-      "includeFiles": "public/fonts/**,public/static/logo.png"
+    "api/index.mjs": {
+      "includeFiles": "public/**"
     }
   }
 }

@@ -21,6 +21,7 @@ import { RECIPIENT_ROLES_DESCRIPTION } from '../../constants/recipient-roles';
 import { DOCUMENT_AUDIT_LOG_TYPE } from '../../types/document-audit-logs';
 import type { TDocumentAuditLog } from '../../types/document-audit-logs';
 import { formatDocumentAuditLogAction } from '../../utils/document-audit-logs';
+import { getFontPath, getStaticPath } from './helpers';
 
 export type AuditLogRecipient = {
   id: number;
@@ -446,8 +447,7 @@ const renderBranding = () => {
 
   const brandingHeight = 16;
 
-  const logoPath = path.join(process.cwd(), 'public/static/logo.png');
-  const logo = fs.readFileSync(logoPath);
+  const logo = fs.readFileSync(path.join(getStaticPath(), 'logo.png'));
 
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   const img = new SkiaImage(logo) as unknown as HTMLImageElement;
@@ -575,7 +575,7 @@ export async function renderAuditLogs({
   i18n,
   hidePoweredBy,
 }: GenerateAuditLogsOptions) {
-  const fontPath = path.join(process.cwd(), 'public/fonts');
+  const fontPath = getFontPath();
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   FontLibrary.use({

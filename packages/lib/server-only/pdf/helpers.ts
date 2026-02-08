@@ -1,8 +1,38 @@
 import { FieldType } from '@prisma/client';
 import type { Recipient } from '@prisma/client';
+import fs from 'node:fs';
+import path from 'node:path';
 import { match } from 'ts-pattern';
 
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
+
+/**
+ * Resolve the path to `public/` assets (fonts, static images).
+ *
+ * Locally, `process.cwd()` is `apps/remix/` so `public/` is a direct child.
+ * On Vercel, `process.cwd()` is `/var/task` and the monorepo layout is preserved,
+ * so the path may be `apps/remix/public/` or just `public/` depending on
+ * the Vercel root directory setting and includeFiles config.
+ */
+export const getPublicPath = (() => {
+  const cwd = process.cwd();
+  const candidates = [
+    path.join(cwd, 'public'),
+    path.join(cwd, 'apps/remix/public'),
+    path.join(cwd, 'apps/remix/build/client'),
+  ];
+
+  const resolved = candidates.find((p) => fs.existsSync(path.join(p, 'fonts')));
+
+  if (!resolved) {
+    throw new Error(`Could not find public assets directory. Checked: ${candidates.join(', ')}`);
+  }
+
+  return () => resolved;
+})();
+
+export const getFontPath = () => path.join(getPublicPath(), 'fonts');
+export const getStaticPath = () => path.join(getPublicPath(), 'static');
 
 type RecipientPlaceholderInfo = {
   email: string;

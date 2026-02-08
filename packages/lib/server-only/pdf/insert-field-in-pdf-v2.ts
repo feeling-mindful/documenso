@@ -9,6 +9,7 @@ import { FontLibrary } from 'skia-canvas';
 import type { FieldWithSignature } from '@documenso/prisma/types/field-with-signature';
 
 import { renderField } from '../../universal/field-renderer/render-field';
+import { getFontPath } from './helpers';
 
 type InsertFieldInPDFV2Options = {
   pageWidth: number;
@@ -21,7 +22,7 @@ export const insertFieldInPDFV2 = async ({
   pageHeight,
   fields,
 }: InsertFieldInPDFV2Options) => {
-  const fontPath = path.join(process.cwd(), 'public/fonts');
+  const fontPath = getFontPath();
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   FontLibrary.use({
