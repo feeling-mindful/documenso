@@ -3,7 +3,12 @@
   "rewrites": [{"source": "/(.*)", "destination": "/api"}],
   "functions": {
     "api/index.mjs": {
-      "includeFiles": "public/**"
+      "includeFiles": [
+        "public/fonts/caveat*.ttf",
+        "public/fonts/inter*.ttf",
+        "public/fonts/noto-sans.ttf",
+        "public/static/logo.png"
+      ]
     }
   }
 }

@@ -2,6 +2,7 @@
 import '../konva/skia-backend';
 
 import Konva from 'konva';
+import fs from 'node:fs';
 import path from 'node:path';
 import type { Canvas } from 'skia-canvas';
 import { FontLibrary } from 'skia-canvas';
@@ -24,14 +25,24 @@ export const insertFieldInPDFV2 = async ({
 }: InsertFieldInPDFV2Options) => {
   const fontPath = getFontPath();
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  FontLibrary.use({
+  const fonts: Record<string, string[]> = {
     ['Caveat']: [path.join(fontPath, 'caveat.ttf')],
     ['Noto Sans']: [path.join(fontPath, 'noto-sans.ttf')],
-    ['Noto Sans Japanese']: [path.join(fontPath, 'noto-sans-japanese.ttf')],
-    ['Noto Sans Chinese']: [path.join(fontPath, 'noto-sans-chinese.ttf')],
-    ['Noto Sans Korean']: [path.join(fontPath, 'noto-sans-korean.ttf')],
-  });
+  };
+
+  for (const [name, file] of [
+    ['Noto Sans Japanese', 'noto-sans-japanese.ttf'],
+    ['Noto Sans Chinese', 'noto-sans-chinese.ttf'],
+    ['Noto Sans Korean', 'noto-sans-korean.ttf'],
+  ] as const) {
+    const filePath = path.join(fontPath, file);
+    if (fs.existsSync(filePath)) {
+      fonts[name] = [filePath];
+    }
+  }
+
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  FontLibrary.use(fonts);
 
   let stage: Konva.Stage | null = new Konva.Stage({ width: pageWidth, height: pageHeight });
   let layer: Konva.Layer | null = new Konva.Layer();
