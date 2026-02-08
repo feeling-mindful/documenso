@@ -6,26 +6,32 @@ import {
   SUPPORTED_LANGUAGE_CODES,
   isValidLanguageCode,
 } from '../../constants/i18n';
-import { env } from '../../utils/env';
 import { remember } from '../../utils/remember';
 
 type SupportedLanguages = (typeof SUPPORTED_LANGUAGE_CODES)[number];
 
+// Static import map so the bundler can trace these at build time.
+const translationLoaders: Record<string, () => Promise<{ messages: Messages }>> = {
+  de: async () => import('../../translations/de/web.mjs'),
+  en: async () => import('../../translations/en/web.mjs'),
+  fr: async () => import('../../translations/fr/web.mjs'),
+  es: async () => import('../../translations/es/web.mjs'),
+  it: async () => import('../../translations/it/web.mjs'),
+  nl: async () => import('../../translations/nl/web.mjs'),
+  pl: async () => import('../../translations/pl/web.mjs'),
+  'pt-BR': async () => import('../../translations/pt-BR/web.mjs'),
+  ja: async () => import('../../translations/ja/web.mjs'),
+  ko: async () => import('../../translations/ko/web.mjs'),
+  zh: async () => import('../../translations/zh/web.mjs'),
+};
+
 export async function loadCatalog(lang: SupportedLanguages): Promise<{
   [k: string]: Messages;
 }> {
-  const extension = env('NODE_ENV') === 'development' ? 'po' : 'mjs';
+  const loader = translationLoaders[lang] ?? translationLoaders[APP_I18N_OPTIONS.sourceLang];
 
-  try {
-    const { messages } = await import(
-      `../../translations/${lang}/web.${extension}`
-    );
-    return { [lang]: messages };
-  } catch {
-    // In serverless (e.g. Vercel) the translation files may not be in the bundle.
-    // Return empty messages so the app still runs; strings may show as keys.
-    return { [lang]: {} as Messages };
-  }
+  const { messages } = await loader();
+  return { [lang]: messages };
 }
 
 const catalogs = Promise.all(SUPPORTED_LANGUAGE_CODES.map(loadCatalog));

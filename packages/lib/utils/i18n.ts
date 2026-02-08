@@ -4,13 +4,34 @@ import type { MacroMessageDescriptor } from '@lingui/core/macro';
 
 import type { I18nLocaleData, SupportedLanguageCodes } from '../constants/i18n';
 import { APP_I18N_OPTIONS } from '../constants/i18n';
-import { env } from './env';
+
+// Static import map so the bundler can trace these at build time.
+// Dynamic template-literal imports (e.g. `../translations/${locale}/web.mjs`)
+// are invisible to Vercel's bundler and get excluded from the serverless function.
+const translationLoaders: Record<string, () => Promise<{ messages: Record<string, string> }>> = {
+  de: async () => import('../translations/de/web.mjs'),
+  en: async () => import('../translations/en/web.mjs'),
+  fr: async () => import('../translations/fr/web.mjs'),
+  es: async () => import('../translations/es/web.mjs'),
+  it: async () => import('../translations/it/web.mjs'),
+  nl: async () => import('../translations/nl/web.mjs'),
+  pl: async () => import('../translations/pl/web.mjs'),
+  'pt-BR': async () => import('../translations/pt-BR/web.mjs'),
+  ja: async () => import('../translations/ja/web.mjs'),
+  ko: async () => import('../translations/ko/web.mjs'),
+  zh: async () => import('../translations/zh/web.mjs'),
+};
 
 export async function getTranslations(locale: string) {
-  const extension = env('NODE_ENV') === 'development' ? 'po' : 'mjs';
+  const loader = translationLoaders[locale];
 
-  const { messages } = await import(`../translations/${locale}/web.${extension}`);
+  if (!loader) {
+    const fallback = translationLoaders[APP_I18N_OPTIONS.sourceLang];
+    const { messages } = await fallback();
+    return messages;
+  }
 
+  const { messages } = await loader();
   return messages;
 }
 
