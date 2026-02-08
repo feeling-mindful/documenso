@@ -25,7 +25,12 @@ const config = {
     typescript({
       noEmitOnError: true,
       moduleResolution: 'bundler',
-      include: ['server/**/*', '../../packages/**/*', '../../packages/lib/translations/**/*'],
+      include: [
+        'server/**/*',
+        '../../packages/**/*',
+        '../../packages/lib/translations/**/*',
+        '*.d.ts',
+      ],
       jsx: 'preserve',
     }),
     resolve({
