@@ -8,8 +8,7 @@ import { APP_I18N_OPTIONS } from '../constants/i18n';
 // Static import map so the bundler can trace these at build time.
 // Dynamic template-literal imports (e.g. `../translations/${locale}/web.mjs`)
 // are invisible to Vercel's bundler and get excluded from the serverless function.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const translationLoaders: Record<string, () => Promise<{ messages: any }>> = {
+const translationLoaders: Record<string, () => Promise<{ messages: Record<string, string> }>> = {
   de: async () => import('../translations/de/web.mjs'),
   en: async () => import('../translations/en/web.mjs'),
   fr: async () => import('../translations/fr/web.mjs'),
